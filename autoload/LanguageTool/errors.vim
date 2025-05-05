@@ -28,6 +28,29 @@ function! LanguageTool#errors#find() "{{{1
     return {}
 endfunction
 
+
+function! LanguageTool#ui#ShowSuggestions() abort
+  let l:errors = get(b:, 'languagetool_errors', [])
+  let l:cursor_pos = getpos('.')
+  let l:line = l:cursor_pos[1]
+  let l:col = l:cursor_pos[2]
+  for l:err in l:errors
+    if l:err.line == l:line && l:err.col <= l:col && l:col <= l:err.col + l:err.length
+      if has_key(l:err, 'suggestions') && len(l:err.suggestions) > 0
+        let l:choice = inputlist(['Select a suggestion:'] + l:err.suggestions)
+        if l:choice > 0 && l:choice <= len(l:err.suggestions)
+          let l:suggestion = l:err.suggestions[l:choice - 1]
+          call nvim_buf_set_text(0, l:err.line - 1, l:err.col - 1, l:err.line - 1, l:err.col - 1 + l:err.length, [l:suggestion])
+        endif
+      else
+        echo "No suggestions available"
+      endif
+      return
+    endif
+  endfor
+  echo "No error under cursor"
+endfunction
+
 " This functions appends a pretty printed version of current error at the end of the current buffer
 " flags can be used to customize how pretty print is done, see doc for more information
 " set the third argument as start line of the pp to highlight context
